@@ -1,0 +1,55 @@
+---
+title: "favstats"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: leonids
+    highlight: github
+---
+
+```{r echo=FALSE}
+pacman::p_load(tidyverse, ggthemes, rgdal, viridis, extrafont, magrittr, readxl, ggmap, highcharter)
+```
+
+
+```{r echo=FALSE}
+# terror <- readxl::read_xlsx("data/globalterrorism.xlsx", sheet = "Data")
+
+# save(terror, file = "data/terror.Rdata")
+
+load("data/terror.Rdata")
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE, out.width=150}
+terror %>% 
+  filter(iyear >= 2000) %>% 
+  filter(region %in% c(8, 9)) %>% 
+  filter(nkill > 0) %>% 
+  filter(longitude <= 38) %>% 
+  # filter(longitude >= 24) %>% 
+  # filter(latitude >= 13) %>% 
+  arrange(desc(nkill)) %>% 
+  mutate(lon = longitude) %>% 
+  mutate(lat = latitude) %>% 
+  mutate(date = paste(iyear, imonth, iday, sep = "-")) %>% 
+  mutate(name = paste0("<br> <b>Country:</b> ", country_txt,
+                       "<br> <b>City:</b> ", city, 
+                       "<br> <b>Date:</b> ", date,
+                       "<br> <b>Group:</b> ", gname,
+                       "<br> <b>Attack Type:</b> ", attacktype1_txt,
+                       "<br> <b>Target:</b> ", target1,
+                       "<br> <b>Death Count</b>")) %>% 
+  select(name, lon = longitude, lat,  z = nkill
+         ) -> terror_map
+
+hcmap("custom/europe", showInLegend = FALSE) %>%
+  hc_add_series(data = na.omit(terror_map), type = "mapbubble",
+                minSize = 0, maxSize = 30,
+                name = "Terror Attack", fillOpacity = 0.01) %>%
+  highcharter::hc_title(text = "Terror Attacks with Casualties > 1 (2000 - 2016)", 
+                        style = list(fontWeight = "bold")) %>%
+  hc_subtitle(text = "Source: <a href='https://www.start.umd.edu/gtd/'>Global Terrorism Database (GTD)</a>")
+
+```
